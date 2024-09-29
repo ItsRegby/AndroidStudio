@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">lab1</string>
+    <string name="author">Eduard</string>
+    <string name="custom_text">Hello, Compose, from Eduard)</string>
+</resources>
