@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.sp
 import com.example.lab1.ui.theme.Lab1Theme
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
@@ -49,121 +52,133 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Greeting(viewModel: GreetingViewModel, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    var clickCount by remember { mutableStateOf(0) }
-    var messages by remember { mutableStateOf(listOf("Welcome!")) }
-    var timeSinceLastClick by remember { mutableStateOf(0L) }
+    val clickCount by viewModel.clickCount.collectAsState()
+    val messages by viewModel.messages.collectAsState()
+    val timeSinceLastClick by viewModel.timeSinceLastClick.collectAsState()
+    val listState = rememberLazyListState()
 
-    LaunchedEffect(key1 = clickCount) {
+    LaunchedEffect(key1 = Unit) {
         while (true) {
             delay(1000)
-            timeSinceLastClick++
+            viewModel.updateTimer()
         }
     }
+
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(8.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "Button clicked $clickCount times",
             modifier = Modifier
                 .animateContentSize()
-                .padding(16.dp)
+                .padding(8.dp)
                 .shadow(4.dp, shape = RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp),
-            fontSize = 28.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .background(Color(0xFFF5F5F5), shape = RoundedCornerShape(12.dp))
-                .padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            items(messages) { message ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(4.dp)
-                        .shadow(4.dp, shape = RoundedCornerShape(8.dp)),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(16.dp),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = "Time since last click: $timeSinceLastClick seconds",
-            fontSize = 16.sp,
+            fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        Button(
-            onClick = {
-                viewModel.changeText()
-                clickCount++
-                messages = messages + "New message #$clickCount"
-                timeSinceLastClick = 0L
-                Toast.makeText(context, "Button clicked!", Toast.LENGTH_SHORT).show()
-            },
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
-                .shadow(6.dp, shape = RoundedCornerShape(16.dp)),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                .weight(1f)
+                .background(Color(0xFFF5F5F5), shape = RoundedCornerShape(12.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
-            Text(
-                text = "Add Message",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(messages) { message ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp)
+                            .shadow(2.dp, shape = RoundedCornerShape(8.dp)),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Text(
+                            text = message,
+                            modifier = Modifier.padding(12.dp),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
         }
+        Spacer(modifier = Modifier.height(8.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                clickCount = 0
-                messages = listOf("Welcome!")
-                timeSinceLastClick = 0L
-                Toast.makeText(context, "Counter reset!", Toast.LENGTH_SHORT).show()
-            },
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
-                .shadow(6.dp, shape = RoundedCornerShape(16.dp)),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722))
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = "Reset Counter",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            Button(
+                onClick = {
+                    viewModel.changeText()
+                    viewModel.incrementClickCount()
+                    Toast.makeText(context, "Button clicked!", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(50.dp)
+                    .shadow(4.dp, shape = RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text(
+                    text = "Add Message",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Button(
+                onClick = {
+                    viewModel.resetAll()
+                    Toast.makeText(context, "Counter reset!", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(50.dp)
+                    .shadow(4.dp, shape = RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722))
+            ) {
+                Text(
+                    text = "Reset",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
     }
 }
