@@ -38,12 +38,104 @@ class DatabaseHelper {
         date TEXT
       )
     ''');
+    await db.execute('''
+      CREATE TABLE users(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        first_name TEXT,
+        last_name TEXT,
+        email TEXT,
+        avatar TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE beers(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        style TEXT,
+        alcohol TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE banks(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bank_name TEXT,
+        account_number TEXT,
+        iban TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE addresses(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        street_name TEXT,
+        street_address TEXT,
+        city TEXT,
+        state TEXT,
+        zip_code TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE appliances(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        equipment TEXT,
+        brand TEXT
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       // Add the 'date' column if it doesn't exist
       await db.execute('ALTER TABLE items ADD COLUMN date TEXT');
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS users(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        first_name TEXT,
+        last_name TEXT,
+        email TEXT,
+        avatar TEXT
+      )
+    ''');
+
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS beers(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        style TEXT,
+        alcohol TEXT
+      )
+    ''');
+
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS banks(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bank_name TEXT,
+        account_number TEXT,
+        iban TEXT
+      )
+    ''');
+
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS addresses(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        street_name TEXT,
+        street_address TEXT,
+        city TEXT,
+        state TEXT,
+        zip_code TEXT
+      )
+    ''');
+
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS appliances(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        equipment TEXT,
+        brand TEXT
+      )
+    ''');
     }
   }
 
@@ -62,6 +154,62 @@ class DatabaseHelper {
       throw Exception('Unknown item type');
     }
     return await db.insert('items', data);
+  }
+
+  Future<void> insertData(String table, Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert(table, data);
+  }
+
+  Future<List<Map<String, dynamic>>> getData(String table) async {
+    final db = await database;
+    return await db.query(table);
+  }
+
+  Future<void> insertApiData(String dataType, List<dynamic> apiData) async {
+    for (var item in apiData) {
+      switch (dataType) {
+        case 'users':
+          await insertData('users', {
+            'first_name': item['first_name'],
+            'last_name': item['last_name'],
+            'email': item['email'],
+            'avatar': item['avatar']
+          });
+          break;
+        case 'beers':
+          await insertData('beers', {
+            'name': item['name'],
+            'style': item['style'],
+            'alcohol': item['alcohol']
+          });
+          break;
+        case 'banks':
+          await insertData('banks', {
+            'bank_name': item['bank_name'],
+            'account_number': item['account_number'],
+            'iban': item['iban']
+          });
+          break;
+        case 'addresses':
+          await insertData('addresses', {
+            'street_name': item['street_name'],
+            'street_address': item['street_address'],
+            'city': item['city'],
+            'state': item['state'],
+            'zip_code': item['zip_code']
+          });
+          break;
+        case 'appliances':
+          await insertData('appliances', {
+            'equipment': item['equipment'],
+            'brand': item['brand']
+          });
+          break;
+        default:
+          throw Exception('Unknown data type: $dataType');
+      }
+    }
   }
 
   Future<List<ListItem>> getItems() async {
@@ -110,5 +258,12 @@ class DatabaseHelper {
   Future<void> deleteAllItems() async {
     final db = await database;
     await db.delete('items');
+  }
+
+  Future<void> deleteDB() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'listItems.db');
+
+    await deleteDatabase(path);
   }
 }

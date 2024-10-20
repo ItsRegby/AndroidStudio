@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../utils/database_helper.dart';
+import 'package:sqflite/sqflite.dart';
 
 class ApiDataPage extends StatefulWidget {
   const ApiDataPage({Key? key}) : super(key: key);
@@ -30,7 +32,7 @@ class _ApiDataPageState extends State<ApiDataPage> {
   void initState() {
     super.initState();
     _scrollController.addListener(_scrollListener);
-    fetchData();
+    loadDataFromDatabase(); // Load data from database first
   }
 
   @override
@@ -56,19 +58,16 @@ class _ApiDataPageState extends State<ApiDataPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('https://random-data-api.com/api/v2/$currentDataType?size=$itemsPerPage'),
+        Uri.parse('https://random-data-api.com/api/v2/$currentDataType?size=$itemsPerPage&page=$_currentPage'),
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> newData = json.decode(response.body);
-        print('Fetched ${newData.length} items');  // Debugging log
+
+        await DatabaseHelper.instance.insertApiData(currentDataType, newData);
 
         setState(() {
-          if (_currentPage == 1) {
-            data = newData;
-          } else {
-            data.addAll(newData);
-          }
+          data.addAll(newData);
           _currentPage++;
           isLoading = false;
         });
@@ -76,7 +75,7 @@ class _ApiDataPageState extends State<ApiDataPage> {
         throw Exception('Failed to load data: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching data: $e');  // Debugging log
+      print('Error fetching data: $e');
       setState(() {
         errorMessage = 'Failed to load data. Please try again.';
         isLoading = false;
@@ -84,11 +83,30 @@ class _ApiDataPageState extends State<ApiDataPage> {
     }
   }
 
+
+  // Load data from the database based on the currentDataType
+  Future<void> loadDataFromDatabase() async {
+    try {
+      final List<Map<String, dynamic>> dbData = await DatabaseHelper.instance.getData(currentDataType);
+      setState(() {
+        data = List.from(dbData);
+        _currentPage = (dbData.length ~/ itemsPerPage) + 1;
+      });
+    } catch (e) {
+      print('Error loading data from database: $e');
+      setState(() {
+        errorMessage = 'Failed to load data from the database.';
+      });
+    }
+  }
+
+
   Future<void> refreshData() async {
     setState(() {
       _currentPage = 1;
       data.clear();
     });
+    await loadDataFromDatabase();
     await fetchData();
   }
 
