@@ -7,6 +7,7 @@ import '../widgets/date_item_widget.dart';
 import '../utils/data_provider.dart';
 import '../widgets/add_item_dialog.dart';
 import '../widgets/edit_item_dialog.dart';
+import 'api_data_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
@@ -147,14 +148,33 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addItem,
-        tooltip: 'Add Item',
-        icon: const Icon(Icons.add),
-        label: const Text('Add Item'),
-        elevation: 4,
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            onPressed: _addItem,
+            tooltip: 'Add Item',
+            icon: const Icon(Icons.add),
+            label: const Text('Add Item'),
+            elevation: 4,
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ApiDataPage()),
+              );
+            },
+            tooltip: 'Fetch API Data',
+            icon: const Icon(Icons.cloud_download),
+            label: const Text('Fetch API Data'),
+            elevation: 4,
+          ),
+        ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
